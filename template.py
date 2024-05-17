@@ -16,6 +16,7 @@ list_of_files = [
     # "docker-compose.yml",
     "app.py",
     "Dockerfile",
+    "images/1.jpg",
     # "SemanticRouting.py",
     "templates/index.html",
     "static/style.css",
