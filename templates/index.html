@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webcam/Image Upload and AI Processing</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>Insightful-Eyes</h1>
+    <form action="/ImageOverview" method="post" enctype="multipart/form-data" id="imageForm">
+        <label for="upload">Upload Image</label>
+        <input type="file" name="image_file" accept="image/*" id="imageFile" onchange="displayImage(this)"><br><br>
+        <div id="imagePreview"></div>
+        <input type="text" name="prompt" placeholder="Speak or type the prompt for the AI" id="prompt" style="display: none;"><br><br>
+        <button type="button" onclick="startListening()">Speak Prompt</button>
+        <button type="button" onclick="processImage()">Process Image</button>
+        <br>
+        <br>
+        <div id="response"></div>
+        <div id="transcription"></div> <!-- Added div to display transcription -->
+    </form>
+    <script>
+        // Function to display the selected image
+        function displayImage(input) {
+            var preview = document.getElementById('imagePreview');
+            while (preview.firstChild) {
+                preview.removeChild(preview.firstChild);
+            }
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.style.maxWidth = '100%';
+                    img.style.height = 'auto';
+                    preview.appendChild(img);
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    
+        // Function to start listening for speech input
+        function startListening() {
+            var recognition = new webkitSpeechRecognition() || new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.onresult = function(event) {
+                var transcript = event.results[0][0].transcript;
+                document.getElementById('prompt').value = transcript;
+                document.getElementById('transcription').textContent = transcript; // Display transcription
+                setTimeout(processImage, 4000); // Automatically start processing after 4 seconds of silence
+            };
+            recognition.start();
+        }
+    
+        // Function to send image to server for processing
+        function processImage() {
+            var form = document.getElementById('imageForm');
+            var formData = new FormData(form);
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "/ImageOverview", true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var jsonResponse = JSON.parse(xhr.responseText);
+                    var responseText = jsonResponse.response_text.replace('>', ''); // Remove ">" symbol
+                    var responseContainer = document.getElementById('response');
+                    responseContainer.textContent = responseText;
+                    speak(responseText); // Speak the final response
+                    hidePrompt(); // Hide the prompt input field and button
+                }
+            };
+            xhr.send(formData);
+        }
+    
+        // Function to hide the prompt input field and button
+        function hidePrompt() {
+            var promptInput = document.getElementById('prompt');
+            var speakButton = document.getElementById('speakButton');
+            promptInput.style.display = 'none';
+            speakButton.style.display = 'none';
+        }
+    
+        // Function to speak text with a female American accent and flirty voice
+        function speak(text) {
+            var utterance = new SpeechSynthesisUtterance(text);
+            utterance.voice = getFemaleFlirtyVoice();
+            utterance.pitch = 1.5; // Adjust pitch to make it sound flirty
+            utterance.rate = 0.9; // Adjust rate to control speaking speed
+            window.speechSynthesis.speak(utterance);
+        }
+    
+        // Function to get a female American accent voice with a flirty tone
+        function getFemaleFlirtyVoice() {
+            var voices = window.speechSynthesis.getVoices();
+            for (var i = 0; i < voices.length; i++) {
+                if (voices[i].lang === 'en-US' && voices[i].name.includes('English (United States)') && voices[i].name.includes('Female')) {
+                    return voices[i];
+                }
+            }
+            // If suitable voice is not found, return the default voice
+            return null;
+        }
+    
+        // Wait until voices are loaded before using the speech synthesis
+        window.speechSynthesis.onvoiceschanged = function() {
+            // This event is triggered when the voices are loaded
+            startListening(); // Start listening for speech input after voices are loaded
+        };
+    
+        // Add event listener to switch between webcam and file upload
+        document.getElementById('upload').addEventListener('change', function() {
+            var fileInput = document.getElementById('imageFile');
+            if (this.checked) {
+                fileInput.disabled = false;
+                fileInput.required = true;
+            } else {
+                fileInput.disabled = true;
+                fileInput.required = false;
+            }
+        });
+    </script>
+    
+    
+    
+    
+    
+</body>
+</html>

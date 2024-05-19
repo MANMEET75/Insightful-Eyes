@@ -5,6 +5,7 @@ from PIL import Image as PILImage
 from google.api_core.client_options import ClientOptions
 import google.generativeai as genai
 import textwrap
+import tempfile
 
 # Configuration for Google Generative AI
 genai.configure(
@@ -38,7 +39,10 @@ def call_LMM(image_path: str, prompt: str) -> str:
     img = PILImage.open(image_path)
     model = genai.GenerativeModel('gemini-pro-vision')
     response = model.generate_content([prompt, img], stream=False)
-    return response.text
+    if response and response.text:
+        return response.text
+    else:
+        return "Error: No valid response received from the model."
 
 def to_markdown(text):
     text = text.replace('•', '  *')
@@ -67,7 +71,8 @@ if option == 'Upload Image':
         st.session_state.image_path = image_path
         st.image(st.session_state.image_path, caption='Uploaded Image', use_column_width=True)
 elif option == 'Use Webcam':
-    if st.button("Capture Image"):
+    st.write("Click on the button below to capture an image:")
+    if st.button("Click Image"):
         image_path = capture_image()
         if image_path:
             st.session_state.image_path = image_path
@@ -80,5 +85,5 @@ if st.session_state.image_path:
         st.session_state.response_text = call_LMM(st.session_state.image_path, st.session_state.prompt)
         st.markdown(to_markdown(st.session_state.response_text))
 
-# if st.session_state.response_text:
-#     st.markdown(to_markdown(st.session_state.response_text))
+if st.session_state.response_text:
+    st.markdown(to_markdown(st.session_state.response_text))
