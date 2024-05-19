@@ -5,3 +5,6 @@ ollama
 Pillow
 transformers
 ml_dtypes
+streamlit
+
+
