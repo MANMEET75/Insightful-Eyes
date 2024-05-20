@@ -12,6 +12,14 @@
     <form action="/ImageOverview" method="post" enctype="multipart/form-data" id="imageForm">
         <label for="upload">Upload Image</label>
         <input type="file" name="image_file" accept="image/*" id="imageFile" onchange="displayImage(this)"><br><br>
+        
+        <button type="button" onclick="captureFromWebcam()">Capture Image from Webcam</button>
+        <div id="webcamPreview">
+            <video id="webcam" autoplay></video>
+            <button type="button" id="snap" onclick="snapPhoto()">Snap Photo</button>
+        </div>
+        <canvas id="canvas" style="display: none;"></canvas>
+
         <div id="imagePreview"></div>
         <input type="text" name="prompt" placeholder="Speak or type the prompt for the AI" id="prompt" style="display: none;"><br><br>
         <button type="button" onclick="startListening()">Speak Prompt</button>
@@ -22,6 +30,8 @@
         <div id="transcription"></div> <!-- Added div to display transcription -->
     </form>
     <script>
+        let videoStream = null;
+
         // Function to display the selected image
         function displayImage(input) {
             var preview = document.getElementById('imagePreview');
@@ -40,7 +50,7 @@
                 reader.readAsDataURL(input.files[0]);
             }
         }
-    
+
         // Function to start listening for speech input
         function startListening() {
             var recognition = new webkitSpeechRecognition() || new SpeechRecognition();
@@ -53,7 +63,7 @@
             };
             recognition.start();
         }
-    
+
         // Function to send image to server for processing
         function processImage() {
             var form = document.getElementById('imageForm');
@@ -72,7 +82,7 @@
             };
             xhr.send(formData);
         }
-    
+
         // Function to hide the prompt input field and button
         function hidePrompt() {
             var promptInput = document.getElementById('prompt');
@@ -80,7 +90,7 @@
             promptInput.style.display = 'none';
             speakButton.style.display = 'none';
         }
-    
+
         // Function to speak text with a female American accent and flirty voice
         function speak(text) {
             var utterance = new SpeechSynthesisUtterance(text);
@@ -89,7 +99,7 @@
             utterance.rate = 0.9; // Adjust rate to control speaking speed
             window.speechSynthesis.speak(utterance);
         }
-    
+
         // Function to get a female American accent voice with a flirty tone
         function getFemaleFlirtyVoice() {
             var voices = window.speechSynthesis.getVoices();
@@ -101,29 +111,69 @@
             // If suitable voice is not found, return the default voice
             return null;
         }
-    
+
         // Wait until voices are loaded before using the speech synthesis
         window.speechSynthesis.onvoiceschanged = function() {
             // This event is triggered when the voices are loaded
             startListening(); // Start listening for speech input after voices are loaded
         };
-    
-        // Add event listener to switch between webcam and file upload
-        document.getElementById('upload').addEventListener('change', function() {
-            var fileInput = document.getElementById('imageFile');
-            if (this.checked) {
-                fileInput.disabled = false;
-                fileInput.required = true;
-            } else {
-                fileInput.disabled = true;
-                fileInput.required = false;
+
+        // Function to capture image from webcam
+        function captureFromWebcam() {
+            var video = document.getElementById('webcam');
+            var webcamPreview = document.getElementById('webcamPreview');
+            webcamPreview.style.display = 'block';
+
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function(stream) {
+                    videoStream = stream;
+                    video.srcObject = stream;
+                    video.play();
+                })
+                .catch(function(err) {
+                    console.log("An error occurred: " + err);
+                });
+        }
+
+        // Function to snap photo from video feed
+        function snapPhoto() {
+            var video = document.getElementById('webcam');
+            var canvas = document.getElementById('canvas');
+            var context = canvas.getContext('2d');
+            var webcamPreview = document.getElementById('webcamPreview');
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            var img = new Image();
+            img.src = canvas.toDataURL('image/png');
+            img.style.maxWidth = '100%';
+            img.style.height = 'auto';
+
+            var preview = document.getElementById('imagePreview');
+            while (preview.firstChild) {
+                preview.removeChild(preview.firstChild);
             }
-        });
+            preview.appendChild(img);
+
+            // Convert canvas to Blob and append to form data
+            canvas.toBlob(function(blob) {
+                var file = new File([blob], "webcam_image.png", { type: "image/png" });
+                var dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                document.getElementById('imageFile').files = dataTransfer.files;
+            });
+
+            // Stop the video stream and hide the video element
+            video.pause();
+            video.srcObject = null;
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            webcamPreview.style.display = 'none';
+        }
     </script>
-    
-    
-    
-    
-    
 </body>
 </html>
