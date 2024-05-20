@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Webcam/Image Upload and AI Processing</title>
+    <title>Insightful-Eyes</title>
+    <link href="../static/eyesIco.png" rel="icon">
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -48,7 +49,7 @@
                 var transcript = event.results[0][0].transcript;
                 document.getElementById('prompt').value = transcript;
                 document.getElementById('transcription').textContent = transcript; // Display transcription
-                setTimeout(processImage, 4000); // Automatically start processing after 4 seconds of silence
+                setTimeout(processImage, 2000); // Automatically start processing after 4 seconds of silence
             };
             recognition.start();
         }
@@ -84,7 +85,7 @@
         function speak(text) {
             var utterance = new SpeechSynthesisUtterance(text);
             utterance.voice = getFemaleFlirtyVoice();
-            utterance.pitch = 1.5; // Adjust pitch to make it sound flirty
+            utterance.pitch = 3.5; // Adjust pitch to make it sound flirty
             utterance.rate = 0.9; // Adjust rate to control speaking speed
             window.speechSynthesis.speak(utterance);
         }
