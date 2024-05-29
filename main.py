@@ -74,10 +74,11 @@ async def process_image(image_file: UploadFile = File(...), prompt: str = Form(.
         with open(os.path.join(save_dir, image_file.filename), "wb") as f:
             f.write(contents)
         image_path = os.path.join(save_dir, image_file.filename)
-  
+    
+    
     response_text = None
     if image_path:
-        response_text = call_LMM(image_path, prompt)
+        response_text = call_LMM(image_path,prompt)
     
     if response_text:
         return {"response_text": to_markdown(response_text)}
