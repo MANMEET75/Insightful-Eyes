@@ -58,67 +58,67 @@ save_dir = 'images'
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
 
-# Secret key to sign JWT token
-SECRET_KEY = "#3hk@HKJHK@#J@#KJHKJ@#JK%$%@HKJ#@jkw43654344521434231@1212432!"
-ALGORITHM = "HS256"
+# # Secret key to sign JWT token
+# SECRET_KEY = "#3hk@HKJHK@#J@#KJHKJ@#JK%$%@HKJ#@jkw43654344521434231@1212432!"
+# ALGORITHM = "HS256"
 
-# Token expiration time (in minutes)
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+# # Token expiration time (in minutes)
+# ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
-# Example User model
-class User(BaseModel):
-    username: str
-    password: str
+# # Example User model
+# class User(BaseModel):
+#     username: str
+#     password: str
 
-# Example fake database
-fake_users_db = {
-    "fakeuser": {
-        "username": "fakeuser",
-        "password": "fakepassword",
-    }
-}
+# # Example fake database
+# fake_users_db = {
+#     "fakeuser": {
+#         "username": "fakeuser",
+#         "password": "fakepassword",
+#     }
+# }
 
-# Function to authenticate user
-def authenticate_user(username: str, password: str):
-    user = fake_users_db.get(username)
-    if user and password == user["password"]:
-        return user
+# # Function to authenticate user
+# def authenticate_user(username: str, password: str):
+#     user = fake_users_db.get(username)
+#     if user and password == user["password"]:
+#         return user
 
-# Function to create JWT token with expiration
-def create_jwt_token(data: dict):
-    to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+# # Function to create JWT token with expiration
+# def create_jwt_token(data: dict):
+#     to_encode = data.copy()
+#     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+#     to_encode.update({"exp": expire})
+#     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-# Dependency to verify JWT token
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+# # Dependency to verify JWT token
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-    except PyJWTError:
-        raise credentials_exception
-    user = fake_users_db.get(username)
-    if user is None:
-        raise credentials_exception
-    return user
+# def get_current_user(token: str = Depends(oauth2_scheme)):
+#     credentials_exception = HTTPException(
+#         status_code=status.HTTP_401_UNAUTHORIZED,
+#         detail="Could not validate credentials",
+#         headers={"WWW-Authenticate": "Bearer"},
+#     )
+#     try:
+#         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+#         username: str = payload.get("sub")
+#         if username is None:
+#             raise credentials_exception
+#     except PyJWTError:
+#         raise credentials_exception
+#     user = fake_users_db.get(username)
+#     if user is None:
+#         raise credentials_exception
+#     return user
 
-# Token renewal mechanism
-async def renew_token():
-    while True:
-        await asyncio.sleep(60 * 60)  # Sleep for 60 minutes
-        # Regenerate token here
-        print("Regenerating token...")
-        pass  # Replace with actual logic to regenerate the token
+# # Token renewal mechanism
+# async def renew_token():
+#     while True:
+#         await asyncio.sleep(60 * 60)  # Sleep for 60 minutes
+#         # Regenerate token here
+#         print("Regenerating token...")
+#         pass  # Replace with actual logic to regenerate the token
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -129,25 +129,25 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-# Token route
-@app.post("/token")
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(form_data.username, form_data.password)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    token = create_jwt_token({"sub": user["username"]})
-    return {"access_token": token, "token_type": "bearer"}
+# # Token route
+# @app.post("/token")
+# async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+#     user = authenticate_user(form_data.username, form_data.password)
+#     if not user:
+#         raise HTTPException(
+#             status_code=status.HTTP_401_UNAUTHORIZED,
+#             detail="Incorrect username or password",
+#             headers={"WWW-Authenticate": "Bearer"},
+#         )
+#     token = create_jwt_token({"sub": user["username"]})
+#     return {"access_token": token, "token_type": "bearer"}
 
 # Secured route requiring JWT token
 @app.post("/ImageOverview", response_model=dict)
 async def process_image(
     image_file: UploadFile = File(...),
     prompt: str = Form(...),
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),
 ):
     image_path = None
     image_source = "upload"
@@ -166,9 +166,9 @@ async def process_image(
     else:
         return {"error": "Failed to process image."}
 
-# Start token renewal in a separate task
-import asyncio
-asyncio.create_task(renew_token())
+# # Start token renewal in a separate task
+# import asyncio
+# asyncio.create_task(renew_token())
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
