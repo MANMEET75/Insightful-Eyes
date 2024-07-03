@@ -5,6 +5,8 @@ Insightful-Eyes is a powerful, groundbreaking LLM-powered guide designed to illu
 <br>
 <img src="images/1.png">
 <img src="images/2.png">
+# Live Demo
+<img src="images/demo.gif">
 
 # Benefits of Insightful-Eyes: Use Case Perspective
 ### 1. Assistance for the Visually Impaired
