@@ -68,7 +68,6 @@ Insightful-Eyes is a powerful, groundbreaking LLM-powered guide designed to illu
 - **Version Control:** Git, GitHub
 - **IDE:** Visual Studio Code
 - **Collaboration:** GitHub Issues, Pull Requests
-
 # Installation
 ### Clone the repository to your designated path
 ```bash
@@ -106,10 +105,14 @@ http://localhost:3000/
 ```bash
 http://localhost:3000/docs
 ```
+![image](https://github.com/MANMEET75/Insightful-Eyes/assets/97391884/d2a11808-664f-4369-9e04-f3f73d524058)
+
 ### Navigate to the following URL to open the customized ReDoc HTML
 ```bash
 http://localhost:3000/redoc
 ```
+![image](https://github.com/MANMEET75/Insightful-Eyes/assets/97391884/565d3eef-917f-44c3-9752-419eaead83bd)
+
 # Contributing
 We welcome contributions to Insightful-Eyes! To contribute, follow these steps:
 
