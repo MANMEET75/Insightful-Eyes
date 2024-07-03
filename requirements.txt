@@ -8,3 +8,10 @@ ml_dtypes
 streamlit
 uvicorn
 fastapi
+pillow
+einops
+timm
+
+
+
+

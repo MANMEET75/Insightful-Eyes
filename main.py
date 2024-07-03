@@ -1,33 +1,3 @@
-from fastapi import FastAPI, File, UploadFile, Form, Request
-from fastapi.responses import HTMLResponse
-import cv2
-import os
-from PIL import Image as PILImage
-from google.api_core.client_options import ClientOptions
-import google.generativeai as genai
-import textwrap
-import tempfile
-from io import BytesIO
-from starlette.responses import StreamingResponse
-from starlette.staticfiles import StaticFiles
-import uvicorn
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
-from fastapi.staticfiles import StaticFiles
-
-# Configuration for Google Generative AI
-genai.configure(
-    api_key="AIzaSyB8cWDofkHVWOOFMbiUwr74pAEFnySQAHw",
-    transport="rest",
-    client_options=ClientOptions(
-        api_endpoint=os.getenv("GOOGLE_API_BASE"),
-    ),
-)
-
-save_dir = 'images'
-if not os.path.exists(save_dir):
-    os.makedirs(save_dir)
-
 def capture_image():
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
@@ -53,33 +23,132 @@ def to_markdown(text):
     text = text.replace('•', '  *')
     return textwrap.indent(text, '> ', predicate=lambda _: True)
 
+from fastapi import FastAPI, Depends, File, UploadFile, Form, HTTPException, status, Request
+from fastapi.responses import HTMLResponse
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
+from fastapi.openapi.models import OAuthFlowPassword as OAuthFlowPasswordModel
+from pydantic import BaseModel
+import jwt
+from jwt import PyJWTError
+from typing import Optional
+import os
+import cv2
+from PIL import Image as PILImage
+from google.api_core.client_options import ClientOptions
+import google.generativeai as genai
+import textwrap
+from io import BytesIO
+from starlette.responses import StreamingResponse
+from starlette.staticfiles import StaticFiles
+import uvicorn
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
+
+# Configuration for Google Generative AI
+genai.configure(
+    api_key="AIzaSyDMPRBQUZO05p7DuGUIDAzMePDNLYG00cg",
+    transport="rest",
+    client_options=ClientOptions(
+        api_endpoint=os.getenv("GOOGLE_API_BASE"),
+    ),
+)
+
+save_dir = 'images'
+if not os.path.exists(save_dir):
+    os.makedirs(save_dir)
+
+# Secret key to sign JWT token
+SECRET_KEY = "DKJFLKDSJ3#DE3#$&!JKHHKJH3438749KJDHFKEJSDHFJKSDHF29342#*&$#(*$)"
+ALGORITHM = "HS256"
+
+# Example User model
+class User(BaseModel):
+    username: str
+    password: str
+
+# Example fake database
+fake_users_db = {
+    "fakeuser": {
+        "username": "fakeuser",
+        "password": "fakepassword",
+    }
+}
+
+# Function to authenticate user
+def authenticate_user(username: str, password: str):
+    user = fake_users_db.get(username)
+    if user and password == user["password"]:
+        return user
+
+# Function to create JWT token
+def create_jwt_token(data: dict):
+    to_encode = data.copy()
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+# Dependency to verify JWT token
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except PyJWTError:
+        raise credentials_exception
+    user = fake_users_db.get(username)
+    if user is None:
+        raise credentials_exception
+    return user
+
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# Root route
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
-    query_param1 = request.query_params.get('phone')
-    print("parameter1",query_param1)
-    query_param2 = request.query_params.get('timestamp')
-    print("parameter2",query_param2)
     return templates.TemplateResponse("index.html", {"request": request})
 
-@app.post("/ImageOverview")
-async def process_image(image_file: UploadFile = File(...), prompt: str = Form(...)):
+# Token route
+@app.post("/token")
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = authenticate_user(form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    token = create_jwt_token({"sub": user["username"]})
+    return {"access_token": token, "token_type": "bearer"}
+
+# Secured route requiring JWT token
+@app.post("/ImageOverview", response_model=dict)
+async def process_image(
+    image_file: UploadFile = File(...),
+    prompt: str = Form(...),
+    current_user: User = Depends(get_current_user),
+):
     image_path = None
-    image_source="upload"
+    image_source = "upload"
     if image_source == 'upload':
         contents = await image_file.read()
         with open(os.path.join(save_dir, image_file.filename), "wb") as f:
             f.write(contents)
         image_path = os.path.join(save_dir, image_file.filename)
-    
-    
+
     response_text = None
     if image_path:
-        response_text = call_LMM(image_path,prompt)
-    
+        response_text = call_LMM(image_path, prompt)
+
     if response_text:
         return {"response_text": to_markdown(response_text)}
     else:

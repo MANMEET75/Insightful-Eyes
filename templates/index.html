@@ -13,7 +13,12 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 </head>
 <body>
-    <h1>Insightful-Eyes</h1>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <h1 class="heading">Insightful-Eyes</h1>
     <form action="/ImageOverview" method="post" enctype="multipart/form-data" id="imageForm">
         <label for="upload">Upload Image</label>
         <input type="file" class="btn btn-dark" name="image_file" accept="image/*" id="imageFile" onchange="displayImage(this)"><br><br>
@@ -21,7 +26,7 @@
         <button type="button" onclick="captureFromWebcam()" class="btn btn-dark">Capture Image from Webcam</button>
         <br>
         <br>
-        <div id="webcamPreview">
+        <div id="webcamPreview" style="display: none;">
             <video id="webcam" autoplay></video>
             <button type="button" id="snap" onclick="snapPhoto()" class="btn btn-dark">Snap Photo</button>
             <br>
@@ -41,6 +46,7 @@
     </form>
     <script>
         let videoStream = null;
+        let intervalId = null;
 
         // Function to display the selected image
         function displayImage(input) {
@@ -128,6 +134,8 @@
                     videoStream = stream;
                     video.srcObject = stream;
                     video.play();
+                    // Automatically trigger snap photo every 5 seconds
+                    intervalId = setInterval(snapPhoto, 5000);
                 })
                 .catch(function(err) {
                     console.log("An error occurred: " + err);
@@ -145,17 +153,6 @@
             canvas.height = video.videoHeight;
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            var img = new Image();
-            img.src = canvas.toDataURL('image/png');
-            img.style.maxWidth = '100%';
-            img.style.height = 'auto';
-
-            var preview = document.getElementById('imagePreview');
-            while (preview.firstChild) {
-                preview.removeChild(preview.firstChild);
-            }
-            preview.appendChild(img);
-
             // Convert canvas to Blob and append to form data
             canvas.toBlob(function(blob) {
                 var file = new File([blob], "webcam_image.png", { type: "image/png" });
@@ -163,15 +160,6 @@
                 dataTransfer.items.add(file);
                 document.getElementById('imageFile').files = dataTransfer.files;
             });
-
-            // Stop the video stream and hide the video element
-            video.pause();
-            video.srcObject = null;
-            if (videoStream) {
-                videoStream.getTracks().forEach(track => track.stop());
-                videoStream = null;
-            }
-            webcamPreview.style.display = 'none';
         }
     </script>
 </body>
