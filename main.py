@@ -26,8 +26,6 @@ def to_markdown(text):
 from fastapi import FastAPI, Depends, File, UploadFile, Form, HTTPException, status, Request
 from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
-from fastapi.openapi.models import OAuthFlowPassword as OAuthFlowPasswordModel
 from pydantic import BaseModel
 import jwt
 from jwt import PyJWTError
@@ -45,6 +43,7 @@ import uvicorn
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from datetime import datetime, timedelta
 
 # Configuration for Google Generative AI
 genai.configure(
@@ -60,8 +59,11 @@ if not os.path.exists(save_dir):
     os.makedirs(save_dir)
 
 # Secret key to sign JWT token
-SECRET_KEY = "DKJFLKDSJ3#DE3#$&!JKHHKJH3438749KJDHFKEJSDHFJKSDHF29342#*&$#(*$)"
+SECRET_KEY = "#3hk@HKJHK@#J@#KJHKJ@#JK%$%@HKJ#@jkw43654344521434231@1212432!"
 ALGORITHM = "HS256"
+
+# Token expiration time (in minutes)
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 # Example User model
 class User(BaseModel):
@@ -82,9 +84,11 @@ def authenticate_user(username: str, password: str):
     if user and password == user["password"]:
         return user
 
-# Function to create JWT token
+# Function to create JWT token with expiration
 def create_jwt_token(data: dict):
     to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 # Dependency to verify JWT token
@@ -107,6 +111,14 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     if user is None:
         raise credentials_exception
     return user
+
+# Token renewal mechanism
+async def renew_token():
+    while True:
+        await asyncio.sleep(60 * 60)  # Sleep for 60 minutes
+        # Regenerate token here
+        print("Regenerating token...")
+        pass  # Replace with actual logic to regenerate the token
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -153,6 +165,10 @@ async def process_image(
         return {"response_text": to_markdown(response_text)}
     else:
         return {"error": "Failed to process image."}
+
+# Start token renewal in a separate task
+import asyncio
+asyncio.create_task(renew_token())
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
